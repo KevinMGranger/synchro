@@ -40,46 +40,17 @@ impl QuicError {
 type Result<T> = std::result::Result<T, QuicError>;
 // endregion
 
-// region: udpio
-// TODO: could be self-referential, but I'm sick of dealing with that. just do whatever.
-// ugh it would be so cool though.
-// pointers aren't `Send`. I guess I could mark it as okay?
-// I suppose I don't know if these kinds of invariants are transitive. Might as well stick with `Arc` for now.
-
-// TODO: is this even necessary if we're just polling everything? rather, we don't need to split anything,
-// and the framer gives us access to the socket directly.
-
-// ALSO: could we make the combination with the connection its own codec???
-// answer: no, because codecs only work with bytes, we need the socketaddr also.
 
 // quiche's stream map / application data: do we need it? Can we offer (parts) of it to callers?
 // we need it for waiters for reads from other threads
 
-struct UdpIO {
-    sock: Arc<UdpSocket>,
-    stream: SplitStream<UdpFramed<BytesCodec, Arc<UdpSocket>>>,
-    sink: SplitSink<UdpFramed<BytesCodec, Arc<UdpSocket>>, (BytesMut, SocketAddr)>,
-}
-
-impl UdpIO {
-    fn new(sock: Arc<UdpSocket>) -> UdpIO {
-        let framed = UdpFramed::new(sock.clone(), BytesCodec::new());
-
-        let (sink, stream) = framed.split();
-
-        UdpIO { sock, stream, sink }
-    }
-}
-
-// endregion
 
 // TODO: wondering if we could make a small "async" abstraction over
 // the connection itself. or is that even worth it?
-// probably not, we just register interest with each 
+// probably not, we just register interest with each
 // call to recv and send.
 // now, what about implementing a stream abstraction that implements AsyncWrite and AsyncRead?
-// 
-mod quiche_io {}
+//
 
 enum SendState {
     Send,
@@ -106,18 +77,25 @@ So will we have a deadlock in a single-threaded case?
 No, because it's not going to hold the lock while waiting for data. It'll get woken up and try to retrieve it. Same for readers/writers who have registered intent.
 todo: how do we structure readers/writers wakers in the app data? do we just need one for reading and one for writing? It can be like a file handle where having m
 multiple copies of the same stream handle is okay, right?
+
+or... how do we do fairness? earlier stream always wins?
+we could do our own scheduling with a map of waiting read/writers by age,
+but how much are we recreaitinf from the runtime?
+Also need to test if queue loss from async runtime means it neve gets released,
+or if a task creating and redoing it would just always be last
  */
 struct QuicConn {
     conn: quiche::Connection,
-    io: UdpIO,
+    io: UdpFramed<BytesCodec, UdpSocket>,
     send_state: SendState,
     send_buf: BytesMut,
 }
 
+// TODO: repalcing the framed with working the socket directly.
 impl QuicConn {
     /// poll, returns if any data was received at all
     fn recv(&mut self, cx: &mut Context<'_>) -> Result<bool> {
-        match self.io.stream.poll_next_unpin(cx) {
+        match self.io.poll_next_unpin(cx) {
             Ready(Some(Ok((mut bytes, from)))) => {
                 self.conn.recv(&mut bytes, RecvInfo { from })?;
             }
@@ -126,7 +104,7 @@ impl QuicConn {
             Pending => return Ok(false),
             _ => todo!(),
         }
-        while let Ready(res) = self.io.stream.poll_next_unpin(cx) {
+        while let Ready(res) = self.io.poll_next_unpin(cx) {
             match res {
                 None => unimplemented!("idk"),
                 Some(Ok((mut bytes, from))) => {
@@ -145,7 +123,7 @@ impl QuicConn {
         loop {
             match self.send_state {
                 SendState::Send => 'send: loop {
-                    let poll = self.io.sink.poll_ready_unpin(cx)?;
+                    let poll = self.io.poll_ready_unpin(cx)?;
                     if poll.is_pending() {
                         self.send_state = SendState::Flush;
                         break 'send;
@@ -162,9 +140,9 @@ impl QuicConn {
                         Err(e) => return Ready(Err(e.into())),
                     };
                     let to_send = self.send_buf.split_to(size);
-                    self.io.sink.start_send_unpin((to_send, target.to))?;
+                    self.io.start_send_unpin((to_send, target.to))?;
                 },
-                SendState::Flush => match self.io.sink.poll_flush_unpin(cx) {
+                SendState::Flush => match self.io.poll_flush_unpin(cx) {
                     Ready(Ok(())) => {
                         self.send_state = SendState::Send;
                     }
