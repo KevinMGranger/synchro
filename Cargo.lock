@@ -1141,6 +1141,7 @@ dependencies = [
  "clap",
  "futures",
  "ignore",
+ "parking_lot 0.12.1",
  "quiche",
  "relative-path",
  "serde",
