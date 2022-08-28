@@ -48,6 +48,11 @@ type Result<T> = std::result::Result<T, QuicError>;
 
 // TODO: is this even necessary if we're just polling everything? rather, we don't need to split anything,
 // and the framer gives us access to the socket directly.
+
+// ALSO: could we make the combination with the connection its own codec???
+// answer: no, because codecs only work with bytes, we need the socketaddr also.
+
+// quiche's stream map / application data: do we need it? Can we offer (parts) of it to callers?
 struct UdpIO {
     sock: Arc<UdpSocket>,
     stream: SplitStream<UdpFramed<BytesCodec, Arc<UdpSocket>>>,
