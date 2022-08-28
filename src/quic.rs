@@ -53,6 +53,8 @@ type Result<T> = std::result::Result<T, QuicError>;
 // answer: no, because codecs only work with bytes, we need the socketaddr also.
 
 // quiche's stream map / application data: do we need it? Can we offer (parts) of it to callers?
+// we need it for waiters for reads from other threads
+
 struct UdpIO {
     sock: Arc<UdpSocket>,
     stream: SplitStream<UdpFramed<BytesCodec, Arc<UdpSocket>>>,
@@ -87,6 +89,24 @@ enum SendState {
 
 // TODO: use conn value
 const RESERVE_SIZE: usize = 1024;
+
+// when we get around to putting a mutex here, what scenarios do we have?
+/*
+all scenarios are something that deals with connection <-> udp versus a reader/writer to/from a stream
+(oh that reminsds me, we need to periodically recv anyways)
+(or is that what the built-in timer is for?)
+
+anyhow, scenarios:
+
+1. reader wins. needs to read data that isn't there. maybe it tries to recv just in case. says it's not ready but registers with stream map.
+
+okay nvm all the scenarios are the same as long as readers/writers are kind about doing send/recv... right?
+
+So will we have a deadlock in a single-threaded case?
+No, because it's not going to hold the lock while waiting for data. It'll get woken up and try to retrieve it. Same for readers/writers who have registered intent.
+todo: how do we structure readers/writers wakers in the app data? do we just need one for reading and one for writing? It can be like a file handle where having m
+multiple copies of the same stream handle is okay, right?
+ */
 struct QuicConn {
     conn: quiche::Connection,
     io: UdpIO,
