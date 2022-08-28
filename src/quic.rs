@@ -146,6 +146,8 @@ impl QuicConn {
                     Ready(Ok(())) => {
                         self.send_state = SendState::Send;
                     }
+                    // why can't rust infer this?
+                    // we know the codec error type is io error, right?
                     Ready(Err(e)) => return Ready(Err(e.into())),
                     Pending => return Pending,
                 },
