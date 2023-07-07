@@ -8,3 +8,6 @@
     4. Make a little more idiomatic.
     5. Idk I had something here from before but I forgot.
     
+
+# side notes
+I wish there was `anyhow` but with type-safe, same errors
