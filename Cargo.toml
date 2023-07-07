@@ -3,8 +3,25 @@ name = "winsynctest"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+clap = { version = "4.3.11", features = ["derive"] }
+tap = "1.0.1"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies.windows]
 version = "0.43.0"
-features = ["Win32_Storage_CloudFilters", "Win32_Foundation", "Win32_System_CorrelationVector"]
+features = [
+    "Win32_Storage_CloudFilters",
+    "Win32_Foundation",
+    "Win32_System_CorrelationVector",
+    "Win32_Storage_FileSystem",
+    "Win32_System_IO",
+    "Storage_Provider",
+    "Win32_System_Threading",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_System_Memory",
+
+    "Foundation",
+]
