@@ -1,16 +1,20 @@
+mod cloud_filter;
 // use windows::core::Result;
 // use windows::Win32::Foundation::BOOL;
 use std::{
     ffi::{c_void, OsString},
+    fs::Metadata,
+    io,
     marker::PhantomData,
     mem::transmute,
     ops::{Deref, DerefMut},
-    os::windows::prelude::OsStringExt,
+    os::windows::{fs::MetadataExt, prelude::OsStringExt},
 };
 use windows::{
     core::{Error as WinError, Result as WinResult, PWSTR},
     Win32::{
         Foundation::{GetLastError, BOOL, ERROR_INSUFFICIENT_BUFFER},
+        Storage::FileSystem::FILE_BASIC_INFO,
         System::Memory::LocalFree,
     },
 };
@@ -119,5 +123,15 @@ impl Deref for LocalPWSTR {
 impl Into<OsString> for LocalPWSTR {
     fn into(self) -> OsString {
         OsStringExt::from_wide(unsafe { self.0.as_wide() })
+    }
+}
+
+fn metadata_to_file_basic_info(meta: &Metadata) -> FILE_BASIC_INFO {
+    FILE_BASIC_INFO {
+        CreationTime: meta.creation_time() as i64,
+        LastAccessTime: meta.last_access_time() as i64,
+        LastWriteTime: meta.last_write_time() as i64,
+        ChangeTime: meta.last_write_time() as i64,
+        FileAttributes: meta.file_attributes(),
     }
 }

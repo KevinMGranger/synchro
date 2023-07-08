@@ -32,7 +32,8 @@ use windows::{
         Storage::CloudFilters::{
             CfConnectSyncRoot, CF_CALLBACK, CF_CALLBACK_INFO, CF_CALLBACK_PARAMETERS,
             CF_CALLBACK_REGISTRATION, CF_CALLBACK_TYPE_FETCH_DATA, CF_CALLBACK_TYPE_NONE,
-            CF_CONNECTION_KEY, CF_CONNECT_FLAG_NONE,
+            CF_CONNECTION_KEY, CF_CONNECT_FLAG_NONE, CF_FS_METADATA, CF_PLACEHOLDER_CREATE_INFO,
+            CF_PLACEHOLDER_MAX_FILE_IDENTITY_LENGTH,
         },
         System::Threading::{GetCurrentProcess, OpenProcessToken},
     },
