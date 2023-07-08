@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 pub(crate) use windows::{
     core::{Error as WinError, Result as WinResult, HSTRING, PCWSTR, PWSTR},
     h,
