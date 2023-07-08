@@ -1,10 +1,12 @@
 mod cloud_filter;
 mod dynamic_buf_ptr;
 mod local_pwstr;
-mod prelude;
+mod owned_wstr;
+pub(crate) mod prelude;
 pub(crate) use dynamic_buf_ptr::*;
 pub(crate) use local_pwstr::*;
-pub(crate) use prelude::*;
+pub(crate) use owned_wstr::*;
+use prelude::*;
 
 use anyhow::{Context, Result};
 use windows::Win32::{
