@@ -1,6 +1,6 @@
 use super::prelude::*;
-use std::ffi::OsString;
-use std::os::windows::prelude::OsStringExt;
+use std::ffi::{OsStr, OsString};
+use std::os::windows::prelude::{OsStrExt, OsStringExt};
 use std::{mem::transmute, ops::Deref};
 use windows::Win32::System::Memory::LocalFree;
 
@@ -36,5 +36,34 @@ impl Deref for LocalPWSTR {
 impl From<LocalPWSTR> for OsString {
     fn from(value: LocalPWSTR) -> Self {
         OsStringExt::from_wide(unsafe { value.0.as_wide() })
+    }
+}
+
+
+pub(crate) struct OwnedWSTR {
+    buf: Vec<u16>,
+}
+
+impl OwnedWSTR {
+    pub(crate) unsafe fn loan_ptr(&self) -> *const u16 {
+        self.buf.as_ptr()
+    }
+
+    pub(crate) unsafe fn loan_pcwstr(&self) -> PCWSTR {
+        PCWSTR(self.loan_ptr())
+    }
+
+    pub(crate) fn from_str(str: &str) -> Self {
+        let mut buf = str.encode_utf16().collect::<Vec<_>>();
+        buf.push(0);
+
+        Self { buf }
+    }
+
+    pub(crate) fn from_os_str(str: &OsStr) -> Self {
+        let mut buf = str.encode_wide().collect::<Vec<_>>();
+        buf.push(0);
+
+        Self { buf }
     }
 }

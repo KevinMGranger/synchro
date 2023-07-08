@@ -2,7 +2,7 @@ use std::fs::Metadata;
 use std::os::windows::fs::MetadataExt;
 use std::ptr;
 
-use crate::util::windows::prelude::*;
+use crate::util::windows::{prelude::*, OwnedWSTR};
 use windows::core::{HRESULT, PCWSTR};
 use windows::Win32::Storage::CloudFilters::{
     CF_FS_METADATA, CF_PLACEHOLDER_CREATE_FLAG_NONE, CF_PLACEHOLDER_CREATE_INFO,
@@ -32,6 +32,15 @@ pub(crate) fn single_file_placeholder(relative_name: PCWSTR) -> CF_PLACEHOLDER_C
     }
 }
 
-// TODO: PCWSTR is some bullshit so we're going to just leak memory for now.
+pub(crate) struct PlaceholderCreateInfo<'a> {
+    relative_file_name: &'a OwnedWSTR,
+}
 
-pub(crate) fn create_placeholder(base_path: PCWSTR, relative_name: PCWSTR)
+pub(crate) struct PlaceholderResults {
+    processed: u32,
+}
+
+// TODO: PCWSTR is some bullshit. Maybe create a safer abstraction over this.
+// Could even just _not_ allow the struct, and just give back results correlated with _safe_ strings.
+
+// pub(crate) fn create_placeholder(base_path: PCWSTR, relative_name: PCWSTR) -> WinResult<>

@@ -1,12 +1,12 @@
 mod cloud_filter;
 mod dynamic_buf_ptr;
-mod local_pwstr;
-mod owned_wstr;
 pub(crate) mod prelude;
+mod ptr;
+mod strings;
 pub(crate) use dynamic_buf_ptr::*;
-pub(crate) use local_pwstr::*;
-pub(crate) use owned_wstr::*;
 use prelude::*;
+pub(crate) use ptr::{FromVoid, ToBytes};
+pub(crate) use strings::*;
 
 use anyhow::{Context, Result};
 use windows::Win32::{
