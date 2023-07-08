@@ -9,7 +9,7 @@ use tap::Conv;
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use util::windows::{DynamicBufPtr, LocalPWSTR};
+use util::windows::{get_token_user, DynamicBufPtr, LocalPWSTR};
 use windows::{
     core::{Result as WinResult, HSTRING, PCWSTR},
     h,
@@ -59,18 +59,6 @@ const CALLBACK_TABLE: &[CF_CALLBACK_REGISTRATION] = &[
         Callback: None,
     },
 ];
-
-fn get_token_user() -> Result<DynamicBufPtr<TOKEN_USER>> {
-    let mut process_token = HANDLE::default();
-    unsafe { OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut process_token) }
-        .ok()
-        .context("OpenprocessToken")?;
-
-    DynamicBufPtr::new(|ptr, size, ret_len| unsafe {
-        GetTokenInformation(process_token, TokenUser, ptr, size, ret_len)
-    })
-    .context("GetTokenInformation")
-}
 
 const STORAGE_PROVIDER_ID: &str = "TestStorageProvider";
 const STORAGE_PROVIDER_ACCOUNT: &str = "TestAccount1";
