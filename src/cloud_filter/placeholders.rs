@@ -1,46 +1,87 @@
+use anyhow::{Context, Result};
+use std::ffi::c_void;
 use std::fs::Metadata;
 use std::os::windows::fs::MetadataExt;
+use std::os::windows::prelude::OsStrExt;
+use std::path::Path;
 use std::ptr;
+use tap::Conv;
 
-use crate::util::windows::{prelude::*, OwnedWSTR};
+use crate::util::windows::{prelude::*, OwnedWSTR, ToBytes};
 use windows::core::{HRESULT, PCWSTR};
 use windows::Win32::Storage::CloudFilters::{
-    CF_FS_METADATA, CF_PLACEHOLDER_CREATE_FLAG_NONE, CF_PLACEHOLDER_CREATE_INFO,
+    CfCreatePlaceholders, CF_CREATE_FLAGS, CF_FS_METADATA, CF_PLACEHOLDER_CREATE_FLAGS,
+    CF_PLACEHOLDER_CREATE_FLAG_NONE, CF_PLACEHOLDER_CREATE_INFO,
+    CF_PLACEHOLDER_MAX_FILE_IDENTITY_LENGTH,
 };
 use windows::Win32::Storage::FileSystem::{FILE_ATTRIBUTE_NORMAL, FILE_BASIC_INFO};
 
-const FILE_CONTENTS: &str = "Hello, world!\n";
+pub(crate) struct PlaceholderCreateInfo<Identity> {
+    relative_file_name: OwnedWSTR,
+    meta_data: CF_FS_METADATA,
+    identity: Identity,
+    flags: CF_PLACEHOLDER_CREATE_FLAGS,
+    result: HRESULT,
+    create_usn: i64,
+}
 
-pub(crate) fn single_file_placeholder(relative_name: PCWSTR) -> CF_PLACEHOLDER_CREATE_INFO {
-    CF_PLACEHOLDER_CREATE_INFO {
-        RelativeFileName: relative_name,
-        FsMetadata: CF_FS_METADATA {
-            BasicInfo: FILE_BASIC_INFO {
-                CreationTime: 0,
-                LastAccessTime: 0,
-                LastWriteTime: 0,
-                ChangeTime: 0,
-                FileAttributes: FILE_ATTRIBUTE_NORMAL.0,
-            },
-            FileSize: FILE_CONTENTS.len() as i64,
-        },
-        FileIdentity: ptr::null(),
-        FileIdentityLength: 0,
-        Flags: CF_PLACEHOLDER_CREATE_FLAG_NONE,
-        Result: HRESULT::default(),
-        CreateUsn: 0,
+impl<Identity: ToBytes> PlaceholderCreateInfo<Identity> {
+    unsafe fn to_inner<'a>(&'a self) -> Result<CF_PLACEHOLDER_CREATE_INFO> {
+        let RelativeFileName = unsafe { self.relative_file_name.loan_pcwstr() };
+        let FsMetadata = self.meta_data.clone();
+
+        let file_identity_buf = self.identity.to_bytes();
+
+        anyhow::ensure!(
+            file_identity_buf.len() <= CF_PLACEHOLDER_MAX_FILE_IDENTITY_LENGTH as usize,
+            "file identity buffer exceeds CF_PLACEHOLDER_MAX_FILE_IDENTITY_LENGTH"
+        ); // todo more detail
+
+        let FileIdentity = file_identity_buf.as_ptr() as *const c_void;
+        let FileIdentityLength = file_identity_buf.len() as u32;
+        let Flags = self.flags;
+
+        Ok(CF_PLACEHOLDER_CREATE_INFO {
+            RelativeFileName,
+            FsMetadata,
+            FileIdentity,
+            FileIdentityLength,
+            Flags,
+            Result: Default::default(),
+            CreateUsn: Default::default(),
+        })
     }
 }
 
-pub(crate) struct PlaceholderCreateInfo<'a> {
-    relative_file_name: &'a OwnedWSTR,
+pub(crate) fn create_placeholders<Identity: ToBytes>(
+    base_directory_path: impl Into<OwnedWSTR>,
+    placeholders: &mut [PlaceholderCreateInfo<Identity>],
+    create_flags: CF_CREATE_FLAGS,
+) -> Result<u32> {
+    let mut unsafe_placeholders = placeholders
+        .iter()
+        .map(|info| unsafe { info.to_inner() })
+        .collect::<Result<Vec<CF_PLACEHOLDER_CREATE_INFO>>>()?;
+
+    let mut entries_processed = 0u32;
+
+    let basedirectorypath = base_directory_path.conv::<OwnedWSTR>();
+
+    let res = unsafe {
+        CfCreatePlaceholders(
+            basedirectorypath.loan_pcwstr(),
+            &mut unsafe_placeholders,
+            create_flags,
+            Some(&mut entries_processed),
+        )
+    };
+
+    for (i, unsafe_placeholder) in unsafe_placeholders.iter().enumerate() {
+        let safe_boy = &mut placeholders[i];
+        safe_boy.result = unsafe_placeholder.Result;
+        safe_boy.create_usn = unsafe_placeholder.CreateUsn;
+    }
+
+    res.map(|_| entries_processed)
+        .context("failed to process placeholders") // TODO more specific context or custom error, including entries processed
 }
-
-pub(crate) struct PlaceholderResults {
-    processed: u32,
-}
-
-// TODO: PCWSTR is some bullshit. Maybe create a safer abstraction over this.
-// Could even just _not_ allow the struct, and just give back results correlated with _safe_ strings.
-
-// pub(crate) fn create_placeholder(base_path: PCWSTR, relative_name: PCWSTR) -> WinResult<>

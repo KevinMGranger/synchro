@@ -39,7 +39,6 @@ impl From<LocalPWSTR> for OsString {
     }
 }
 
-
 pub(crate) struct OwnedWSTR {
     buf: Vec<u16>,
 }
@@ -52,16 +51,20 @@ impl OwnedWSTR {
     pub(crate) unsafe fn loan_pcwstr(&self) -> PCWSTR {
         PCWSTR(self.loan_ptr())
     }
+}
 
-    pub(crate) fn from_str(str: &str) -> Self {
-        let mut buf = str.encode_utf16().collect::<Vec<_>>();
+impl From<&OsStr> for OwnedWSTR {
+    fn from(value: &OsStr) -> Self {
+        let mut buf = value.encode_wide().collect::<Vec<_>>();
         buf.push(0);
 
         Self { buf }
     }
+}
 
-    pub(crate) fn from_os_str(str: &OsStr) -> Self {
-        let mut buf = str.encode_wide().collect::<Vec<_>>();
+impl From<&str> for OwnedWSTR {
+    fn from(value: &str) -> Self {
+        let mut buf = value.encode_utf16().collect::<Vec<_>>();
         buf.push(0);
 
         Self { buf }
