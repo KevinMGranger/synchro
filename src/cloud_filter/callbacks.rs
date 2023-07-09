@@ -40,3 +40,7 @@ pub(crate) unsafe fn connect_callbacks(
         CF_CONNECT_FLAG_NONE,
     )
 }
+
+pub(crate) CallbackInfo<T> {
+    
+}
