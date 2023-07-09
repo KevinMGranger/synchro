@@ -10,4 +10,13 @@
     
 
 # side notes
-I wish there was `anyhow` but with type-safe, same errors
+- how can I make `FromVoid` allow just using it as a reference, but enforce it as static if it won't be?
+    - does it need to be _ToStructure_ for the sake of lifetime specs?
+
+- I wish there was `anyhow` but with type-safe, same errors
+
+- for a trampoline, offer a macro to generate the callback functions.
+  - I _could_ make it work with multiple implementations too, but that seems highly unnecessary.
+    - do I even want this to be a generic library?
+
+- seriously, who is supposed to be in charge of the memory in the callback info / params?

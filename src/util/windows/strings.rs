@@ -1,5 +1,7 @@
 use super::prelude::*;
 use std::ffi::{OsStr, OsString};
+use std::fmt;
+use std::marker::PhantomData;
 use std::os::windows::prelude::{OsStrExt, OsStringExt};
 use std::{mem::transmute, ops::Deref};
 use windows::Win32::System::Memory::LocalFree;
@@ -76,5 +78,20 @@ impl From<&HSTRING> for OwnedWSTR {
         Self {
             buf: value.as_wide().to_owned(),
         }
+    }
+}
+
+/// A PCWSTR that we don't own, but trust to be properly null terminated.
+/// Makes displaying it safe.
+pub(crate) struct TrustedBorrowedCWSTR<'a>(PCWSTR, PhantomData<&'a ()>);
+
+impl<'a> TrustedBorrowedCWSTR<'a> {
+    pub(crate) unsafe fn from_raw(value: PCWSTR) -> Self {
+        Self(value, PhantomData)
+    }
+}
+impl<'a> fmt::Display for TrustedBorrowedCWSTR<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        unsafe { self.0.display() }.fmt(f)
     }
 }
