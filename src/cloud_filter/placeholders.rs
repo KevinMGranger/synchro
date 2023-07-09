@@ -1,20 +1,19 @@
 use anyhow::{Context, Result};
 use std::ffi::c_void;
-use std::fs::Metadata;
-use std::os::windows::fs::MetadataExt;
-use std::os::windows::prelude::OsStrExt;
-use std::path::Path;
-use std::ptr;
+
+
+
+
+
 use tap::Conv;
 
-use crate::util::windows::{prelude::*, OwnedWSTR, ToBytes};
-use windows::core::{HRESULT, PCWSTR};
+use crate::util::windows::{OwnedWSTR, ToBytes};
+use windows::core::{HRESULT};
 use windows::Win32::Storage::CloudFilters::{
-    CfCreatePlaceholders, CF_CREATE_FLAGS, CF_FS_METADATA, CF_PLACEHOLDER_CREATE_FLAGS,
-    CF_PLACEHOLDER_CREATE_FLAG_NONE, CF_PLACEHOLDER_CREATE_INFO,
+    CfCreatePlaceholders, CF_CREATE_FLAGS, CF_FS_METADATA, CF_PLACEHOLDER_CREATE_FLAGS, CF_PLACEHOLDER_CREATE_INFO,
     CF_PLACEHOLDER_MAX_FILE_IDENTITY_LENGTH,
 };
-use windows::Win32::Storage::FileSystem::{FILE_ATTRIBUTE_NORMAL, FILE_BASIC_INFO};
+
 
 pub(crate) struct PlaceholderCreateInfo<Identity> {
     relative_file_name: OwnedWSTR,
@@ -26,9 +25,9 @@ pub(crate) struct PlaceholderCreateInfo<Identity> {
 }
 
 impl<Identity: ToBytes> PlaceholderCreateInfo<Identity> {
-    unsafe fn to_inner<'a>(&'a self) -> Result<CF_PLACEHOLDER_CREATE_INFO> {
+    unsafe fn to_inner(&self) -> Result<CF_PLACEHOLDER_CREATE_INFO> {
         let RelativeFileName = unsafe { self.relative_file_name.loan_pcwstr() };
-        let FsMetadata = self.meta_data.clone();
+        let FsMetadata = self.meta_data;
 
         let file_identity_buf = self.identity.to_bytes();
 

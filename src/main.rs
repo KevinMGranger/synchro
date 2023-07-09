@@ -2,13 +2,13 @@ mod cloud_filter;
 mod sample;
 mod util;
 
-use std::{borrow::Cow, fmt::Display, thread::sleep, time::Duration};
+use std::{thread::sleep, time::Duration};
 
 use crate::cloud_filter::{callbacks::*, sync_root::*};
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use util::windows::ToBytes;
+
 use windows::core::HSTRING;
 
 #[derive(Parser, Debug)]

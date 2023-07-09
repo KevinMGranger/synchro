@@ -1,21 +1,17 @@
-use anyhow::{Context, Result};
-use std::borrow::Cow;
-use std::ffi::c_void;
-use std::fs::Metadata;
-use std::os::windows::fs::MetadataExt;
-use std::os::windows::prelude::OsStrExt;
-use std::path::Path;
-use std::{fmt, ptr};
-use tap::Conv;
 
-use crate::util::windows::{prelude::*, OwnedWSTR, ToBytes};
-use windows::core::{HRESULT, PCWSTR};
-use windows::Win32::Storage::CloudFilters::{
-    CfCreatePlaceholders, CF_CREATE_FLAGS, CF_FS_METADATA, CF_PLACEHOLDER_CREATE_FLAGS,
-    CF_PLACEHOLDER_CREATE_FLAG_NONE, CF_PLACEHOLDER_CREATE_INFO,
-    CF_PLACEHOLDER_MAX_FILE_IDENTITY_LENGTH,
-};
-use windows::Win32::Storage::FileSystem::{FILE_ATTRIBUTE_NORMAL, FILE_BASIC_INFO};
+use std::borrow::Cow;
+
+
+
+
+
+use std::{fmt};
+
+
+use crate::util::windows::{ToBytes};
+
+
+
 
 pub(crate) struct TestName(pub(crate) String);
 
