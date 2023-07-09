@@ -70,3 +70,11 @@ impl From<&str> for OwnedWSTR {
         Self { buf }
     }
 }
+
+impl From<&HSTRING> for OwnedWSTR {
+    fn from(value: &HSTRING) -> Self {
+        Self {
+            buf: value.as_wide().to_owned(),
+        }
+    }
+}
