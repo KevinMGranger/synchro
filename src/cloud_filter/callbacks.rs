@@ -61,28 +61,38 @@ impl CallbackVolumeInfo {
     }
 }
 
-pub(crate) struct SyncRootInfo<T> {
+pub(crate) struct SyncRootInfo<'a> {
     pub(crate) file_id: i64,
-    identity: *const c_void,
-    identity_length: u32,
-    identity_type: PhantomData<T>,
+    pub(crate) identity: &'a [c_void],
 }
 
-impl<T> SyncRootInfo<T>
-where
-    T: FromVoid,
-{
-    fn identity(&self) -> T {
-        unsafe {
-            let slice = std::slice::from_raw_parts(self.identity, self.identity_length as usize);
-            T::from_void_slice(slice)
+pub(crate) struct CallbackInfo<'a> {
+    connection_key: CF_CONNECTION_KEY,
+    // context: *mut c_void, // TODO keep private? seems like it doesn't work anyway
+    volume_info: CallbackVolumeInfo,
+    sync_root_info: SyncRootInfo<'a>,
+    file_id: i64,
+    file_size: i64,
+    file_identity: &'a [c_void],
+    normalized_path: TrustedBorrowedCWSTR<'a>,
+    transfer_key: i64,
+    priority_hint: u8,
+    // correlation_vector: *mut CORRELATION_VECTOR, // TODO
+    // process_info: *mut CF_PROCESS_INFO, // TODO
+    request_key: i64,
+}
+
+impl<'a> From<CF_CALLBACK_INFO> for CallbackInfo<'a> {
+    fn from(value: CF_CALLBACK_INFO) -> Self {
+        Self {
+            connection_key: value.ConnectionKey,
+            volume_info: unsafe {
+                CallbackVolumeInfo {
+                    guid_name: TrustedBorrowedCWSTR::from_raw(value.VolumeGuidName),
+                    dos_name: TrustedBorrowedCWSTR::from_raw(value.VolumeDosName),
+                    serial_number: value.VolumeSerialNumber,
+                }
+            },
         }
     }
-}
-
-pub(crate) struct CallbackInfo<T> {
-    connection_key: CF_CONNECTION_KEY,
-    context: *mut c_void, // TODO keep private
-
-    _d: PhantomData<T>,
 }
