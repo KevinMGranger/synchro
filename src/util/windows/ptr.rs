@@ -2,27 +2,22 @@ use std::{borrow::Cow, ffi::c_void};
 
 /// # Safety
 /// don't keep a reference to the slice, not that I think you can?
-pub(crate) unsafe trait FromVoid {
-    unsafe fn from_void_slice(void: &[c_void]) -> Self;
+pub(crate) trait FromVoidSlice<'a> {
+    fn from_void_slice(void: &'a [c_void]) -> Self;
 }
 
-// test
-struct VoidHolder<'a>(&'a [c_void]);
+pub(crate) trait FromVoidPointer {
+    unsafe fn from_void_ptr(ptr: *const c_void, len: usize) -> Self;
+}
 
-unsafe impl<'a> FromVoid for VoidHolder<'a> {
-    unsafe fn from_void_slice(void: &[c_void]) -> Self {
-        Self(void)
+impl<'a, T> FromVoidPointer for T
+where
+    T: FromVoidSlice<'a>,
+{
+    unsafe fn from_void_ptr(ptr: *const c_void, len: usize) -> Self {
+        let slice = std::slice::from_raw_parts(ptr, len);
+        T::from_void_slice(slice)
     }
-}
-
-fn try_it() {
-    let buf = Vec::<c_void>::new();
-
-    let holder = unsafe { VoidHolder::from_void_slice(buf.as_ref()) };
-
-    drop(buf);
-
-    println!("{:?}", holder.0);
 }
 
 pub(crate) trait ToBytes {
