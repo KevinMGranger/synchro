@@ -1,4 +1,4 @@
-use crate::util::windows::{prelude::*, OwnedWSTR, ToVoid};
+use crate::util::windows::{prelude::*, OwnedWSTR};
 use anyhow::{Context, Result};
 use std::ffi::c_void;
 use std::fs::Metadata;

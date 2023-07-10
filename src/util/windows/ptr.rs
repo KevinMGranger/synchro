@@ -17,24 +17,11 @@ where
     }
 }
 
-// pub(crate) trait ToVoid {
-//     fn to_bytes<'void, 'this: 'void>(&'this self) -> Cow<'void, [c_void]>;
-// }
+// TODO: what would a safer abstraction for this look like, if any?
+// or at least something more ergonomic?
 
-// impl<T> ToVoid for Option<T>
-// where
-//     T: ToVoid,
-// {
-//     fn to_bytes<'void, 'this: 'void>(&'this self) -> Cow<'void, [c_void]> {
-//         match self {
-//             Some(x) => x.to_bytes(),
-//             None => Cow::Owned(Vec::new()),
-//         }
-//     }
-// }
-
-// impl ToVoid for () {
-//     fn to_bytes<'bytes, 'this: 'bytes>(&'this self) -> Cow<'bytes, [c_void]> {
-//         Cow::Owned(Vec::new())
-//     }
-// }
+// also, is there a dictinction between "to" and "as" here, really?
+// cuz it's ambiguous based on the impl.
+pub(crate) trait AsVoidPointer {
+    unsafe fn as_void_ptr(&self) -> (*const c_void, usize);
+}

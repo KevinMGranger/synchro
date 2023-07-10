@@ -2,8 +2,6 @@ use std::borrow::Cow;
 
 use std::fmt;
 
-use crate::util::windows::ToVoid;
-
 pub(crate) struct TestName(pub(crate) String);
 
 impl fmt::Display for TestName {

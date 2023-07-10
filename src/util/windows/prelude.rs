@@ -5,4 +5,4 @@ pub(crate) use windows::{
     Win32::Foundation::{GetLastError, BOOL, HANDLE},
 };
 
-pub(crate) use super::{strings::*, ptr::{FromVoid, ToVoid}};
+pub(crate) use super::{ptr::FromVoidPointer, strings::*};

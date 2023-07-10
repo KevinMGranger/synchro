@@ -5,7 +5,6 @@ mod ptr;
 mod strings;
 pub(crate) use dynamic_buf_ptr::*;
 use prelude::*;
-pub(crate) use ptr::ToVoid;
 pub(crate) use strings::*;
 
 use anyhow::{Context, Result};
