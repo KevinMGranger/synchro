@@ -32,7 +32,7 @@ where
 {
     unsafe fn to_inner(&self) -> Result<CF_PLACEHOLDER_CREATE_INFO> {
         let RelativeFileName = PCWSTR(self.relative_file_name.as_ptr());
-        let FsMetadata = self.meta_data.clone();
+        let FsMetadata = self.meta_data;
 
         let file_identity_buf = self.identity.as_ref();
         anyhow::ensure!(
@@ -63,6 +63,9 @@ impl fmt::Display for CreateErrorContext {
         write!(f, "Processed {} entries", self.0)
     }
 }
+
+#[allow(overflowing_literals)]
+const ALREADY_EXISTS: i32 = 0x800700B7;
 
 // TODO: each placeholder could have a different type of identity, right?
 // how do we represent that properly when we make the whole server wiring everything together?
@@ -99,6 +102,9 @@ where
         safe_boy.create_usn = unsafe_placeholder.CreateUsn;
     }
 
-    res.map(|_| entries_processed)
-        .context(CreateErrorContext(entries_processed))
+    match res {
+        Ok(_) => Ok(entries_processed),
+        Err(e) if e.code().0 == ALREADY_EXISTS => Ok(entries_processed),
+        Err(e) => Err(e).context(CreateErrorContext(entries_processed)),
+    }
 }
