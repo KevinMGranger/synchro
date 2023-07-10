@@ -223,7 +223,11 @@ impl<'a> From<&'a CF_CALLBACK_INFO> for CallbackInfo<'a, &'a [c_void], &'a [c_vo
                 identity: unsafe {
                     slice::from_raw_parts(value.FileIdentity, value.FileIdentityLength as usize)
                 },
-                normalized_path: unsafe { U16CStr::from_ptr_str(value.NormalizedPath.0) },
+                normalized_path: if value.NormalizedPath.is_null() {
+                    Default::default()
+                } else {
+                    unsafe { U16CStr::from_ptr_str(value.NormalizedPath.0) }
+                },
             },
             transfer_key: value.TransferKey,
             priority_hint: value.PriorityHint,
