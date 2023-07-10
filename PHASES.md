@@ -10,6 +10,7 @@
     
 
 # side notes
+- what kind of fuzzing / address sanitization tools are there to make sure our PCWSTR fuckery is okay?
 - bruh conversion should be lazy, just offer the slice
 - how can I make `FromVoid` allow just using it as a reference, but enforce it as static if it won't be?
     - does it need to be _ToStructure_ for the sake of lifetime specs?

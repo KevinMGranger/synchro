@@ -1,18 +1,36 @@
 use std::borrow::Cow;
+use std::mem::transmute;
+use std::slice;
 
+use std::ffi::c_void;
 use std::fmt;
+use std::str::Utf8Error;
 
-pub(crate) struct TestName(pub(crate) String);
+// TODO: ah crap, you give it a copy going in, but it's a borrow coming out.
+// so maybe I was right with requiring a separate type??? idk
+// or keep it as a separate unsafe trait or smth.
+// helpers around Cow?
+// or let it truly be separate types? get some feedback on erognomics.
+#[derive(Debug)] // why does this conditionally work here but not on the other thing???
+pub(crate) struct NameIdentity<T>(T);
 
-impl fmt::Display for TestName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
+impl From<String> for NameIdentity<String> {
+    fn from(value: String) -> Self {
+        Self(value)
     }
 }
 
-impl ToVoid for TestName {
-    fn to_bytes<'bytes, 'this: 'bytes>(&'this self) -> Cow<'bytes, [u8]> {
-        Cow::Borrowed(self.0.as_bytes())
+impl AsRef<[c_void]> for NameIdentity<String> {
+    fn as_ref(&self) -> &[c_void] {
+        unsafe { slice::from_raw_parts(self.0.as_ptr() as *const c_void, self.0.len()) }
+    }
+}
+
+impl TryFrom<&[c_void]> for NameIdentity<&str> {
+    type Error = Utf8Error;
+
+    fn try_from(value: &[c_void]) -> Result<Self, Self::Error> {
+        std::str::from_utf8(unsafe { transmute(value) }).map(NameIdentity)
     }
 }
 

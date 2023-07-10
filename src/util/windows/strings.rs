@@ -1,4 +1,5 @@
 use super::prelude::*;
+use std::borrow::Borrow;
 use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::marker::PhantomData;
@@ -41,57 +42,6 @@ impl From<LocalPWSTR> for OsString {
     }
 }
 
-pub(crate) struct OwnedWSTR {
-    buf: Vec<u16>,
-}
-
-impl OwnedWSTR {
-    pub(crate) unsafe fn loan_ptr(&self) -> *const u16 {
-        self.buf.as_ptr()
-    }
-
-    pub(crate) unsafe fn loan_pcwstr(&self) -> PCWSTR {
-        PCWSTR(self.loan_ptr())
-    }
-}
-
-impl From<&OsStr> for OwnedWSTR {
-    fn from(value: &OsStr) -> Self {
-        let mut buf = value.encode_wide().collect::<Vec<_>>();
-        buf.push(0);
-
-        Self { buf }
-    }
-}
-
-impl From<&str> for OwnedWSTR {
-    fn from(value: &str) -> Self {
-        let mut buf = value.encode_utf16().collect::<Vec<_>>();
-        buf.push(0);
-
-        Self { buf }
-    }
-}
-
-impl From<&HSTRING> for OwnedWSTR {
-    fn from(value: &HSTRING) -> Self {
-        Self {
-            buf: value.as_wide().to_owned(),
-        }
-    }
-}
-
-/// A PCWSTR that we don't own, but trust to be properly null terminated.
-/// Makes displaying it safe.
-pub(crate) struct TrustedBorrowedCWSTR<'a>(PCWSTR, PhantomData<&'a ()>);
-
-impl<'a> TrustedBorrowedCWSTR<'a> {
-    pub(crate) unsafe fn from_raw(value: PCWSTR) -> Self {
-        Self(value, PhantomData)
-    }
-}
-impl<'a> fmt::Display for TrustedBorrowedCWSTR<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        unsafe { self.0.display() }.fmt(f)
-    }
+pub(crate) fn u16cstr_from_hstring(h: &HSTRING) -> &U16CStr {
+    unsafe { U16CStr::from_ptr_unchecked(h.as_ptr(), h.len()) }
 }
