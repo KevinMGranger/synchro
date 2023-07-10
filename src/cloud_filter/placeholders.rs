@@ -1,4 +1,4 @@
-use crate::util::windows::{prelude::*, OwnedWSTR, ToBytes};
+use crate::util::windows::{prelude::*, OwnedWSTR, ToVoid};
 use anyhow::{Context, Result};
 use std::ffi::c_void;
 use std::fs::Metadata;
@@ -24,7 +24,7 @@ pub(crate) struct PlaceholderCreateInfo<Identity> {
     pub(crate) create_usn: i64,
 }
 
-impl<Identity: ToBytes> PlaceholderCreateInfo<Identity> {
+impl<Identity: ToVoid> PlaceholderCreateInfo<Identity> {
     unsafe fn to_inner<'a>(&'a self) -> Result<CF_PLACEHOLDER_CREATE_INFO> {
         let RelativeFileName = unsafe { self.relative_file_name.loan_pcwstr() };
         let FsMetadata = self.meta_data.clone();
@@ -52,7 +52,7 @@ impl<Identity: ToBytes> PlaceholderCreateInfo<Identity> {
     }
 }
 
-pub(crate) fn create_placeholders<Identity: ToBytes>(
+pub(crate) fn create_placeholders<Identity: ToVoid>(
     base_directory_path: impl Into<OwnedWSTR>,
     placeholders: &mut [PlaceholderCreateInfo<Identity>],
     create_flags: CF_CREATE_FLAGS,

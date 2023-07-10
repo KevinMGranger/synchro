@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use std::fmt;
 
-use crate::util::windows::ToBytes;
+use crate::util::windows::ToVoid;
 
 pub(crate) struct TestName(pub(crate) String);
 
@@ -12,7 +12,7 @@ impl fmt::Display for TestName {
     }
 }
 
-impl ToBytes for TestName {
+impl ToVoid for TestName {
     fn to_bytes<'bytes, 'this: 'bytes>(&'this self) -> Cow<'bytes, [u8]> {
         Cow::Borrowed(self.0.as_bytes())
     }
