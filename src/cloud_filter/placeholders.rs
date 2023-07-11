@@ -23,6 +23,7 @@ impl<Identity> PlaceholderCreateInfo<Identity>
 where
     Identity: AsRef<[c_void]>,
 {
+    #[allow(non_snake_case)]
     unsafe fn to_inner(&self) -> Result<CF_PLACEHOLDER_CREATE_INFO> {
         let RelativeFileName = PCWSTR(self.relative_file_name.as_ptr());
         let FsMetadata = self.meta_data;

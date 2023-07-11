@@ -8,6 +8,7 @@ use windows::Win32::Storage::CloudFilters::{
 
 // TODO: here's where I really want to know who owns such pointers. I guess volume info is... always valid?
 // Will it just stay alive til the end of the program?
+#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct CallbackVolumeInfo<'a> {
     pub(crate) guid_name: &'a U16CStr,
@@ -15,6 +16,7 @@ pub(crate) struct CallbackVolumeInfo<'a> {
     pub(crate) serial_number: u32,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct SyncRootInfo<Identity> {
     pub(crate) file_id: i64,
