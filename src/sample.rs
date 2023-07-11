@@ -6,6 +6,15 @@ use std::ffi::c_void;
 use std::fmt;
 use std::str::Utf8Error;
 
+use windows::Win32::Storage::CloudFilters::{
+    CF_CALLBACK_INFO, CF_CALLBACK_PARAMETERS, CF_CALLBACK_REGISTRATION,
+    CF_CALLBACK_TYPE_FETCH_DATA, CF_CALLBACK_TYPE_NONE,
+};
+
+use crate::cloud_filter::prelude::*;
+
+use crate::util::proper_cast_slice;
+
 // TODO: ah crap, you give it a copy going in, but it's a borrow coming out.
 // so maybe I was right with requiring a separate type??? idk
 // or keep it as a separate unsafe trait or smth.
@@ -26,15 +35,52 @@ impl AsRef<[c_void]> for NameIdentity<String> {
     }
 }
 
-impl TryFrom<&[c_void]> for NameIdentity<&str> {
+impl<'a> TryFrom<&'a [c_void]> for NameIdentity<&'a str> {
     type Error = Utf8Error;
 
-    fn try_from(value: &[c_void]) -> Result<Self, Self::Error> {
-        std::str::from_utf8(unsafe { transmute(value) }).map(NameIdentity)
+    fn try_from(value: &'a [c_void]) -> Result<Self, Self::Error> {
+        std::str::from_utf8(proper_cast_slice(value)).map(NameIdentity)
     }
 }
 
 const FILE_CONTENTS: &str = "Hello, world!\n";
+
+type BorrowedNameIdentResult<'a> = Result<NameIdentity<&'a str>, Utf8Error>;
+
+fn the_cooler_fetch_callback(
+    info: CallbackInfo<'_, BorrowedNameIdentResult<'_>, BorrowedNameIdentResult<'_>>,
+    params: FetchDataParams,
+) {
+    dbg!(info);
+    dbg!(params);
+}
+
+pub(crate) extern "system" fn callback_test_fetch(
+    callbackinfo: *const CF_CALLBACK_INFO,
+    callbackparams: *const CF_CALLBACK_PARAMETERS,
+) {
+    let callback_info = unsafe { &*callbackinfo };
+    let params = unsafe { (*callbackparams).Anonymous.FetchData };
+
+    let callback_info = CallbackInfo::from(callback_info);
+    let callback_info = callback_info.map_identities(
+        NameIdentity::<&str>::try_from,
+        NameIdentity::<&str>::try_from,
+    );
+
+    the_cooler_fetch_callback(callback_info, params);
+}
+
+pub(crate) const CALLBACK_TABLE: &[CF_CALLBACK_REGISTRATION] = &[
+    CF_CALLBACK_REGISTRATION {
+        Type: CF_CALLBACK_TYPE_FETCH_DATA,
+        Callback: Some(callback_test_fetch),
+    },
+    CF_CALLBACK_REGISTRATION {
+        Type: CF_CALLBACK_TYPE_NONE,
+        Callback: None,
+    },
+];
 
 // pub(crate) fn single_file_placeholder(relative_name: PCWSTR) -> CF_PLACEHOLDER_CREATE_INFO {
 //     CF_PLACEHOLDER_CREATE_INFO {

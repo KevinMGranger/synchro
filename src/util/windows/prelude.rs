@@ -6,4 +6,5 @@ pub(crate) use windows::{
 };
 
 pub(crate) use super::strings::*;
+pub(crate) use std::ffi::c_void;
 pub(crate) use widestring::{U16CStr, U16CString};

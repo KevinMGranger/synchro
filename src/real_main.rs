@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::{ffi::OsString, thread::sleep, time::Duration};
 
 use crate::cloud_filter::{callbacks::*, sync_root::*};
-use crate::sample::NameIdentity;
+use crate::sample::{self, NameIdentity};
 use crate::util::windows::prelude::*;
 
 use anyhow::{Context, Result};
@@ -29,7 +29,7 @@ pub(crate) fn main() -> Result<()> {
     let sync_root_path_h = args.sync_root_path.as_os_str().into();
     let sync_root_path_u = u16cstr_from_hstring(&sync_root_path_h);
     register_sync_root(&sync_root_path_h).context("reg_sync_r")?;
-    unsafe { connect_callbacks(sync_root_path_u) }.unwrap();
+    unsafe { connect_callbacks(sync_root_path_u, sample::CALLBACK_TABLE) }.unwrap();
 
     let identity = NameIdentity::from("asdf".to_owned());
 
