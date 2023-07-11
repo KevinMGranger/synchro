@@ -20,6 +20,7 @@ features = [
     "Win32_Storage_FileSystem",
     "Win32_System_IO",
     "Storage_Provider",
+    "Storage_Streams", # for IBuffer, not that we can use it?
     "Win32_System_Threading",
     "Win32_Security",
     "Win32_Security_Authorization",

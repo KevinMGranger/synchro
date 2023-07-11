@@ -65,7 +65,7 @@ impl fmt::Display for CreateErrorContext {
 }
 
 #[allow(overflowing_literals)]
-const ALREADY_EXISTS: i32 = 0x800700B7;
+pub(crate) const ALREADY_EXISTS: HRESULT = HRESULT(0x800700B7);
 
 // TODO: each placeholder could have a different type of identity, right?
 // how do we represent that properly when we make the whole server wiring everything together?
@@ -104,7 +104,7 @@ where
 
     match res {
         Ok(_) => Ok(entries_processed),
-        Err(e) if e.code().0 == ALREADY_EXISTS => Ok(entries_processed),
+        Err(e) if e.code() == ALREADY_EXISTS => Ok(entries_processed),
         Err(e) => Err(e).context(CreateErrorContext(entries_processed)),
     }
 }

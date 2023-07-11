@@ -8,6 +8,7 @@ use std::{
 
 use crate::{sample::NameIdentity, util::windows::prelude::*};
 
+use windows::Win32::Storage::CloudFilters::CF_CONNECT_FLAG_REQUIRE_FULL_FILE_PATH;
 use windows::{
     core::{Result as WinResult, PCWSTR},
     Win32::Storage::CloudFilters::{
@@ -63,7 +64,8 @@ pub(crate) unsafe fn connect_callbacks(client_dir: &U16CStr) -> WinResult<CF_CON
         PCWSTR(client_dir.as_ptr()),
         CALLBACK_TABLE.as_ptr(),
         None,
-        CF_CONNECT_FLAG_NONE,
+        // CF_CONNECT_FLAG_NONE,
+        CF_CONNECT_FLAG_REQUIRE_FULL_FILE_PATH,
     )
 }
 
@@ -79,6 +81,7 @@ pub(crate) struct CallbackVolumeInfo<'a> {
     pub(crate) serial_number: u32,
 }
 
+#[derive(Debug)]
 pub(crate) struct SyncRootInfo<Identity> {
     pub(crate) file_id: i64,
     pub(crate) identity: Identity,
@@ -98,37 +101,12 @@ impl<Identity> SyncRootInfo<Identity> {
     }
 }
 
-impl<Identity> Debug for SyncRootInfo<Identity>
-where
-    Identity: Debug,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("SyncRootInfo")
-            .field("file_id", &self.file_id)
-            .field("identity", &self.identity)
-            .finish()
-    }
-}
-
+#[derive(Debug)]
 pub(crate) struct FileInfo<'a, Identity> {
     id: i64,
     size: i64,
     identity: Identity,
     normalized_path: &'a U16CStr,
-}
-
-impl<'a, Identity> Debug for FileInfo<'a, Identity>
-where
-    Identity: Debug,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("FileInfo")
-            .field("id", &self.id)
-            .field("size", &self.size)
-            .field("identity", &self.identity)
-            .field("normalized_path", &self.normalized_path)
-            .finish()
-    }
 }
 
 // TODO: transpose
@@ -148,6 +126,7 @@ impl<'a, Identity> FileInfo<'a, Identity> {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct CallbackInfo<'a, SyncRootIdentity, FileIdentity> {
     pub(crate) connection_key: CF_CONNECTION_KEY,
     // pub(crate) // context: *mut c_void, // TODO keep private? seems like it doesn't work anyway
@@ -159,24 +138,6 @@ pub(crate) struct CallbackInfo<'a, SyncRootIdentity, FileIdentity> {
     // pub(crate) // correlation_vector: *mut CORRELATION_VECTOR, // TODO
     // pub(crate) // process_info: *mut CF_PROCESS_INFO, // TODO
     pub(crate) request_key: i64,
-}
-
-impl<'a, SyncRootIdentity, FileIdentity> Debug for CallbackInfo<'a, SyncRootIdentity, FileIdentity>
-where
-    SyncRootIdentity: Debug,
-    FileIdentity: Debug,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("CallbackInfo")
-            .field("connection_key", &self.connection_key)
-            .field("volume_info", &self.volume_info)
-            .field("sync_root", &self.sync_root)
-            .field("file", &self.file)
-            .field("transfer_key", &self.transfer_key)
-            .field("priority_hint", &self.priority_hint)
-            .field("request_key", &self.request_key)
-            .finish()
-    }
 }
 
 impl<'a, SyncRootIdentity, FileIdentity> CallbackInfo<'a, SyncRootIdentity, FileIdentity> {
