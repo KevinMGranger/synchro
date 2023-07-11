@@ -17,5 +17,9 @@ trait DispatcherTrait {
 fn main() -> Result<()> {
     real_main::main()
 
+    // let binkus = "asdf";
+
+    // dbg!(&binkus[3..5]);
+
     // Ok(())
 }
