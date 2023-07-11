@@ -1,6 +1,5 @@
 mod cloud_filter;
 mod real_main;
-mod sample;
 mod util;
 
 use anyhow::{Context, Result};

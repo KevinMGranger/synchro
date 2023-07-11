@@ -6,7 +6,7 @@ use std::{
     slice,
 };
 
-use crate::{sample::NameIdentity, util::windows::prelude::*};
+use crate::util::windows::prelude::*;
 
 use windows::Win32::Storage::CloudFilters::CF_CONNECT_FLAG_REQUIRE_FULL_FILE_PATH;
 use windows::{
