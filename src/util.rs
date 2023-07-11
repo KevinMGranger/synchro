@@ -1,4 +1,3 @@
-use std::ffi::c_void;
 use std::mem;
 use std::slice;
 use std::{marker::PhantomData, ops::Deref};

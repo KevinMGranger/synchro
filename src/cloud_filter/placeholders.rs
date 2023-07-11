@@ -1,21 +1,14 @@
 use crate::util::windows::prelude::*;
-use crate::util::BorrowWrapper;
+
 use anyhow::{Context, Result};
 use std::ffi::c_void;
 use std::fmt;
-use std::fs::Metadata;
-use std::os::windows::fs::MetadataExt;
-use std::os::windows::prelude::OsStrExt;
-use std::path::Path;
-use std::ptr;
-use tap::Conv;
+
 use windows::core::{HRESULT, PCWSTR};
 use windows::Win32::Storage::CloudFilters::{
     CfCreatePlaceholders, CF_CREATE_FLAGS, CF_FS_METADATA, CF_PLACEHOLDER_CREATE_FLAGS,
-    CF_PLACEHOLDER_CREATE_FLAG_NONE, CF_PLACEHOLDER_CREATE_INFO,
-    CF_PLACEHOLDER_MAX_FILE_IDENTITY_LENGTH,
+    CF_PLACEHOLDER_CREATE_INFO, CF_PLACEHOLDER_MAX_FILE_IDENTITY_LENGTH,
 };
-use windows::Win32::Storage::FileSystem::{FILE_ATTRIBUTE_NORMAL, FILE_BASIC_INFO};
 
 pub(crate) struct PlaceholderCreateInfo<Identity> {
     pub(crate) relative_file_name: U16CString,

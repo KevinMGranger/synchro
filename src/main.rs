@@ -2,7 +2,7 @@ mod cloud_filter;
 mod real_main;
 mod util;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 trait MainTrait {
     fn foo(&self) -> &str;

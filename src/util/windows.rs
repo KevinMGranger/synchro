@@ -1,7 +1,6 @@
 mod cloud_filter;
 mod dynamic_buf_ptr;
 pub(crate) mod prelude;
-mod ptr;
 mod strings;
 pub(crate) use dynamic_buf_ptr::*;
 use prelude::*;

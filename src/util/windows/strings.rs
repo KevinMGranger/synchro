@@ -1,9 +1,8 @@
 use super::prelude::*;
-use std::borrow::Borrow;
-use std::ffi::{OsStr, OsString};
-use std::fmt;
-use std::marker::PhantomData;
-use std::os::windows::prelude::{OsStrExt, OsStringExt};
+
+use std::ffi::OsString;
+
+use std::os::windows::prelude::OsStringExt;
 use std::{mem::transmute, ops::Deref};
 use windows::Win32::System::Memory::LocalFree;
 

@@ -1,5 +1,5 @@
-use std::path::{Path, PathBuf};
-use std::{ffi::OsString, thread::sleep, time::Duration};
+use std::path::PathBuf;
+use std::{thread::sleep, time::Duration};
 
 use crate::cloud_filter::{callbacks::*, sync_root::*};
 use crate::util::windows::prelude::*;
@@ -9,11 +9,10 @@ use clap::Parser;
 use widestring::u16cstr;
 
 use crate::cloud_filter::placeholders::{create_placeholders, PlaceholderCreateInfo};
-use std::borrow::Cow;
-use std::mem::transmute;
+
 use std::slice;
 use windows::{
-    core::{HRESULT, HSTRING},
+    core::HRESULT,
     Win32::Storage::{
         CloudFilters::{CF_CREATE_FLAG_NONE, CF_FS_METADATA, CF_PLACEHOLDER_CREATE_FLAG_NONE},
         FileSystem::{FILE_ATTRIBUTE_NORMAL, FILE_BASIC_INFO},
@@ -21,15 +20,13 @@ use windows::{
 };
 
 use std::ffi::c_void;
-use std::fmt;
+
 use std::str::Utf8Error;
 
 use windows::Win32::Storage::CloudFilters::{
     CF_CALLBACK_INFO, CF_CALLBACK_PARAMETERS, CF_CALLBACK_REGISTRATION,
     CF_CALLBACK_TYPE_FETCH_DATA, CF_CALLBACK_TYPE_NONE,
 };
-
-use crate::cloud_filter::prelude::*;
 
 use crate::util::proper_cast_slice;
 
