@@ -168,7 +168,7 @@ pub(crate) fn main() -> Result<()> {
                 ChangeTime: 0,
                 FileAttributes: FILE_ATTRIBUTE_NORMAL.0,
             },
-            FileSize: FILE_CONTENTS.len() as i64,
+            FileSize: <str as AsRef<[u8]>>::as_ref(FILE_CONTENTS).len() as i64,
         },
         identity,
         flags: CF_PLACEHOLDER_CREATE_FLAG_NONE,
