@@ -1,14 +1,15 @@
 use std::path::PathBuf;
 use std::{thread::sleep, time::Duration};
 
+use crate::cloud_filter::operations::{Operation, TransferDataParams};
+use crate::cloud_filter::placeholders::{create_placeholders, PlaceholderCreateInfo};
 use crate::cloud_filter::{callbacks::*, sync_root::*};
 use crate::util::windows::prelude::*;
 
 use anyhow::{Context, Result};
 use clap::Parser;
 use widestring::u16cstr;
-
-use crate::cloud_filter::placeholders::{create_placeholders, PlaceholderCreateInfo};
+use windows::Win32::Foundation::{NTSTATUS, STATUS_CLOUD_FILE_INVALID_REQUEST, STATUS_SUCCESS};
 
 use std::slice;
 use windows::{
@@ -35,7 +36,7 @@ use crate::util::proper_cast_slice;
 // or keep it as a separate unsafe trait or smth.
 // helpers around Cow?
 // or let it truly be separate types? get some feedback on erognomics.
-#[derive(Debug)] // why does this conditionally work here but not on the other thing???
+#[derive(Debug)]
 pub(crate) struct NameIdentity<T>(T);
 
 impl From<String> for NameIdentity<String> {
@@ -66,8 +67,32 @@ fn the_cooler_fetch_callback(
     info: CallbackInfo<'_, BorrowedNameIdentResult<'_>, BorrowedNameIdentResult<'_>>,
     params: FetchDataParams,
 ) {
-    dbg!(info);
+    dbg!(&info);
     dbg!(params);
+
+    // TODO: there are no docs I can find about these statuses.
+    // TODO: is it more proper to fail if the range is wack, or just not return the whole thing?
+    // should experiment with both.
+    // TODO: clearly need my own struct to convert these to usizes, goodness. Could use a Range too!
+    // TODO: make it more clear that this is about bytes, by using c_void
+    let range = params.RequiredFileOffset as usize
+        ..(params.RequiredFileOffset + params.RequiredLength) as usize;
+    // TODO: try transferring more than requested? especially with a large amount (on a slow disk (can we emulate that))
+
+    let mut transfer = match FILE_CONTENTS.get(range) {
+        Some(slice) => TransferDataParams {
+            status: STATUS_SUCCESS,
+            buf: proper_cast_slice(slice.as_ref()),
+            offset: params.RequiredFileOffset,
+        },
+        None => TransferDataParams {
+            status: STATUS_CLOUD_FILE_INVALID_REQUEST,
+            buf: Default::default(),
+            offset: 0,
+        },
+    };
+
+    let err = dbg!(transfer.execute(&info).unwrap_err());
 }
 
 pub(crate) extern "system" fn callback_test_fetch(
@@ -143,7 +168,7 @@ pub(crate) fn main() -> Result<()> {
                 ChangeTime: 0,
                 FileAttributes: FILE_ATTRIBUTE_NORMAL.0,
             },
-            FileSize: 4,
+            FileSize: FILE_CONTENTS.len() as i64,
         },
         identity,
         flags: CF_PLACEHOLDER_CREATE_FLAG_NONE,
