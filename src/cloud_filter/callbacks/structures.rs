@@ -2,8 +2,9 @@ use std::{ffi::c_void, fmt::Debug, slice};
 
 use crate::util::windows::prelude::*;
 
-use windows::Win32::Storage::CloudFilters::{
-    CF_CALLBACK_INFO, CF_CALLBACK_PARAMETERS_0_6, CF_CONNECTION_KEY,
+use windows::Win32::{
+    Storage::CloudFilters::{CF_CALLBACK_INFO, CF_CALLBACK_PARAMETERS_0_6, CF_CONNECTION_KEY},
+    System::CorrelationVector::CORRELATION_VECTOR,
 };
 
 // TODO: here's where I really want to know who owns such pointers. I guess volume info is... always valid?
@@ -71,7 +72,7 @@ pub(crate) struct CallbackInfo<'a, SyncRootIdentity, FileIdentity> {
     pub(crate) file: FileInfo<'a, FileIdentity>,
     pub(crate) transfer_key: i64,
     pub(crate) priority_hint: u8,
-    // pub(crate) // correlation_vector: *mut CORRELATION_VECTOR, // TODO
+    pub(crate) correlation_vector: *mut CORRELATION_VECTOR,
     // pub(crate) // process_info: *mut CF_PROCESS_INFO, // TODO
     pub(crate) request_key: i64,
 }
@@ -89,6 +90,7 @@ impl<'a, SyncRootIdentity, FileIdentity> CallbackInfo<'a, SyncRootIdentity, File
             file: self.file.map_identity(file_mapper),
             transfer_key: self.transfer_key,
             priority_hint: self.priority_hint,
+            correlation_vector: self.correlation_vector,
             request_key: self.request_key,
         }
     }
@@ -128,6 +130,7 @@ impl<'a> From<&'a CF_CALLBACK_INFO> for CallbackInfo<'a, &'a [c_void], &'a [c_vo
             },
             transfer_key: value.TransferKey,
             priority_hint: value.PriorityHint,
+            correlation_vector: value.CorrelationVector,
             request_key: value.RequestKey,
         }
     }

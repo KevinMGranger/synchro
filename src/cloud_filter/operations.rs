@@ -10,10 +10,11 @@ use windows::Win32::{
 // TODO: macro to help create static SYNC_STATUS whatevers
 
 use super::callbacks::CallbackInfo;
-use crate::util::windows::prelude::*;
+use crate::util::{proper_cast_slice, windows::prelude::*};
 use std::mem::size_of;
 
 // TODO: SYNC_STATUS
+// TODO: take `self` so it can just be implemented on various types of ref?
 pub(crate) trait Operation {
     fn execute<_T, _U>(&mut self, info: &CallbackInfo<'_, _T, _U>) -> WinResult<()>;
 }
@@ -28,8 +29,8 @@ pub(crate) fn op_info_from_callback<_T, _U>(
         Type: op_type,
         ConnectionKey: info.connection_key,
         TransferKey: info.transfer_key,
-        CorrelationVector: std::ptr::null(), // TODO
-        SyncStatus: std::ptr::null(),        // TODO
+        CorrelationVector: info.correlation_vector,
+        SyncStatus: std::ptr::null(), // TODO
         RequestKey: info.request_key,
     }
 }
@@ -62,8 +63,13 @@ impl<'a> TransferDataParams<'a> {
 
 impl<'p> Operation for TransferDataParams<'p> {
     fn execute<_T, _U>(&mut self, info: &CallbackInfo<'_, _T, _U>) -> WinResult<()> {
-        let op_info = op_info_from_callback(info, CF_OPERATION_TYPE_TRANSFER_DATA);
+        let op_info = dbg!(op_info_from_callback(info, CF_OPERATION_TYPE_TRANSFER_DATA));
         let mut params = unsafe { self.to_inner() };
+        // params.Anonymous.TransferData.Buffer = "Hello, world!\n".as_ptr() as *const c_void;
+
+        // test buffer reinterpretation
+        let data: &[u8] = proper_cast_slice(self.buf);
+        let _ = dbg!(std::str::from_utf8(data));
 
         unsafe { CfExecute(&op_info, &mut params) }
     }
