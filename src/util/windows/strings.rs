@@ -41,6 +41,8 @@ impl From<LocalPWSTR> for OsString {
     }
 }
 
+/// Borrow a [U16CStr] from an [HSTRING].
+/// [HSTRING]s are guaranteed to be null-terminated in normal cases, so this is mostly safe.
 pub(crate) fn u16cstr_from_hstring(h: &HSTRING) -> &U16CStr {
     unsafe { U16CStr::from_ptr_unchecked(h.as_ptr(), h.len()) }
 }

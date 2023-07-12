@@ -14,6 +14,7 @@ use windows::{
 // TODO: how do we properly handle the lifecycle of the callbacktable?
 // and how do we
 
+/// Connect the sync root to its related callbacks.
 pub(crate) unsafe fn connect_callbacks(
     client_dir: &U16CStr,
     callback_table: &'static [CF_CALLBACK_REGISTRATION],

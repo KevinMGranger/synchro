@@ -1,3 +1,4 @@
+//! Utilities that make working with Windows FFI easier.
 mod cloud_filter;
 mod dynamic_buf_ptr;
 pub(crate) mod prelude;
@@ -12,6 +13,7 @@ use windows::Win32::{
     System::Threading::{GetCurrentProcess, OpenProcessToken},
 };
 
+/// Get the token for the user currently associated with this process.
 pub(crate) fn get_token_user() -> Result<DynamicBufPtr<TOKEN_USER>> {
     let mut process_token = HANDLE::default();
     unsafe { OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut process_token) }

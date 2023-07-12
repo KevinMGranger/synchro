@@ -10,6 +10,7 @@ use windows::Win32::Storage::CloudFilters::{
     CF_PLACEHOLDER_CREATE_INFO, CF_PLACEHOLDER_MAX_FILE_IDENTITY_LENGTH,
 };
 
+/// Information to create a placeholder.
 pub(crate) struct PlaceholderCreateInfo<Identity> {
     pub(crate) relative_file_name: U16CString,
     pub(crate) meta_data: CF_FS_METADATA,
@@ -23,6 +24,7 @@ impl<Identity> PlaceholderCreateInfo<Identity>
 where
     Identity: AsRef<[c_void]>,
 {
+    /// Convert to a [CF_PLACEHOLDER_CREATE_INFO].
     #[allow(non_snake_case)]
     unsafe fn to_inner(&self) -> Result<CF_PLACEHOLDER_CREATE_INFO> {
         let RelativeFileName = PCWSTR(self.relative_file_name.as_ptr());
@@ -50,6 +52,9 @@ where
     }
 }
 
+/// Since creating placeholders can _partially_ fail,
+/// this error context for [anyhow] lists how many
+/// entries were processed regardless of the error.
 struct CreateErrorContext(u32);
 
 impl fmt::Display for CreateErrorContext {
@@ -65,6 +70,7 @@ pub(crate) const ALREADY_EXISTS: HRESULT = HRESULT(0x800700B7);
 // how do we represent that properly when we make the whole server wiring everything together?
 // Maybe it gets the whole context when deserializing.
 
+/// Create placeholders within a base directory.
 pub(crate) fn create_placeholders<Identity>(
     base_directory_path: &U16CStr,
     placeholders: &mut [PlaceholderCreateInfo<Identity>],

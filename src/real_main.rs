@@ -1,3 +1,5 @@
+//! The meat and potatoes of the file sync example.
+//! This is kept separate so `main` can be used as a quick playground.
 use std::path::PathBuf;
 use std::{thread::sleep, time::Duration};
 
@@ -36,6 +38,10 @@ use crate::util::proper_cast_slice;
 // or keep it as a separate unsafe trait or smth.
 // helpers around Cow?
 // or let it truly be separate types? get some feedback on erognomics.
+
+/// A simple string to be associated with a file placeholder.
+/// Generic so that it can be owned going into placeholder creation,
+/// and borrowed within the callback.
 #[derive(Debug)]
 pub(crate) struct NameIdentity<T>(T);
 
@@ -153,11 +159,12 @@ pub(crate) fn main() -> Result<()> {
     let args = Args::parse(); // todo: check path is absolute
     let sync_root_path_h = args.sync_root_path.as_os_str().into();
     let sync_root_path_u = u16cstr_from_hstring(&sync_root_path_h);
+
     register_sync_root(&sync_root_path_h).context("reg_sync_r")?;
+
     unsafe { connect_callbacks(sync_root_path_u, CALLBACK_TABLE) }.unwrap();
 
     let identity = NameIdentity::from("asdf".to_owned());
-
     let placeholders = &mut [PlaceholderCreateInfo {
         relative_file_name: u16cstr!("foo").to_owned(), // todo COULD be ref... do we care?
         meta_data: CF_FS_METADATA {

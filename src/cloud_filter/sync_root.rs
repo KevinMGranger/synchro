@@ -25,6 +25,9 @@ pub(crate) const STORAGE_PROVIDER_ACCOUNT: &str = "TestAccount1";
 
 // TODO: check how thread info works in addition to process token--
 // never really used impersonation before.
+
+/// Get the sync root ID, formatted as required by
+/// [StorageProviderSyncRootInfo](https://learn.microsoft.com/en-us/uwp/api/windows.storage.provider.storageprovidersyncrootinfo.id?view=winrt-22621#windows-storage-provider-storageprovidersyncrootinfo-id)
 pub(crate) fn get_sync_root_id() -> Result<OsString> {
     let user_token = get_token_user().context("get_token_user")?;
     let sid = user_token.User.Sid;
@@ -42,6 +45,7 @@ pub(crate) fn get_sync_root_id() -> Result<OsString> {
     Ok(id)
 }
 
+/// Register the sync root at the given directory.
 pub(crate) fn register_sync_root(client_dir: &HSTRING) -> Result<()> {
     let sync_root_id = get_sync_root_id()?;
     let info = StorageProviderSyncRootInfo::new()?;
@@ -85,6 +89,9 @@ pub(crate) fn register_sync_root(client_dir: &HSTRING) -> Result<()> {
     // no context field for some reason?
 
     // skipping custom states
+
+    // TODO: wait, there's this but _also_ `CfRegisterSyncRoot`?
+    // I thought the C++ example only used this one?
 
     StorageProviderSyncRootManager::Register(&info).context("register")
 }

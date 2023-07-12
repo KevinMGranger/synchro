@@ -15,11 +15,17 @@ use std::mem::size_of;
 
 // TODO: SYNC_STATUS
 // TODO: take `self` so it can just be implemented on various types of ref?
+
+/// An operation in the [CfExecute] api.
 pub(crate) trait Operation {
+    /// Execute this operation.
+    /// Note that you can't make any bounds on the callback info's generic identities.
+    /// If you need those, add them to the implementing struct in the callback.
     fn execute<_T, _U>(&mut self, info: &CallbackInfo<'_, _T, _U>) -> WinResult<()>;
 }
 
-// TODO: higher-level API so there's no mismatch between op_type and the param type
+/// Create a [CF_OPERATION_INFO] by copying relevant fields from the [CallbackInfo]
+/// object, adding the [CF_OPERATION_TYPE].
 pub(crate) fn op_info_from_callback<_T, _U>(
     info: &CallbackInfo<'_, _T, _U>,
     op_type: CF_OPERATION_TYPE,
@@ -35,6 +41,7 @@ pub(crate) fn op_info_from_callback<_T, _U>(
     }
 }
 
+/// The parameters for a [CF_OPERATION_TYPE_TRANSFER_DATA] operation.
 pub(crate) struct TransferDataParams<'a> {
     pub(crate) status: NTSTATUS,
     pub(crate) buf: &'a [c_void],
@@ -45,6 +52,7 @@ pub(crate) struct TransferDataParams<'a> {
 // but a different representation, then oh crap
 
 impl<'a> TransferDataParams<'a> {
+    /// Convert into the FFI version of this struct.
     unsafe fn to_inner(&self) -> CF_OPERATION_PARAMETERS {
         CF_OPERATION_PARAMETERS {
             ParamSize: (size_of::<u32>() + size_of::<CF_OPERATION_PARAMETERS_0_6>()) as u32,
@@ -67,7 +75,7 @@ impl<'p> Operation for TransferDataParams<'p> {
         let mut params = unsafe { self.to_inner() };
         // params.Anonymous.TransferData.Buffer = "Hello, world!\n".as_ptr() as *const c_void;
 
-        // test buffer reinterpretation
+        // test buffer reinterpretation, in case that's the issue.
         let data: &[u8] = proper_cast_slice(self.buf);
         let _ = dbg!(std::str::from_utf8(data));
 
