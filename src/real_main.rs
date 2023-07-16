@@ -1,6 +1,7 @@
 //! The meat and potatoes of the file sync example.
 //! This is kept separate so `main` can be used as a quick playground.
 use std::path::PathBuf;
+use std::sync::Mutex;
 use std::{thread::sleep, time::Duration};
 
 use crate::cloud_filter::operations::{Operation, TransferDataParams};
@@ -12,6 +13,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use widestring::u16cstr;
 use windows::Win32::Foundation::{NTSTATUS, STATUS_CLOUD_FILE_INVALID_REQUEST, STATUS_SUCCESS};
+use windows::Win32::System::Console::{SetConsoleCtrlHandler, CTRL_C_EVENT};
 
 use std::slice;
 use windows::{
@@ -27,8 +29,8 @@ use std::ffi::c_void;
 use std::str::Utf8Error;
 
 use windows::Win32::Storage::CloudFilters::{
-    CF_CALLBACK_INFO, CF_CALLBACK_PARAMETERS, CF_CALLBACK_REGISTRATION,
-    CF_CALLBACK_TYPE_FETCH_DATA, CF_CALLBACK_TYPE_NONE,
+    CfDisconnectSyncRoot, CF_CALLBACK_INFO, CF_CALLBACK_PARAMETERS, CF_CALLBACK_REGISTRATION,
+    CF_CALLBACK_TYPE_FETCH_DATA, CF_CALLBACK_TYPE_NONE, CF_CONNECTION_KEY,
 };
 
 use crate::util::proper_cast_slice;
@@ -155,6 +157,32 @@ struct Args {
     sync_root_path: PathBuf,
 }
 
+// TODO: find a way to map this to each provider.
+static CONNECTION_KEY: Mutex<CF_CONNECTION_KEY> = Mutex::new(CF_CONNECTION_KEY(0));
+
+// TODO: check if handler is already running?
+unsafe extern "system" fn unregister_on_ctrl_c(ctrltype: u32) -> BOOL {
+    if ctrltype != CTRL_C_EVENT {
+        return false.into();
+    }
+
+    // TODO: timeout using parking_lot mutex
+    match CONNECTION_KEY.lock() {
+        Err(_) => {
+            // TODO LOG
+            false.into()
+        }
+        Ok(mut connection_key) => {
+            println!("shutting down cleanly");
+            CfDisconnectSyncRoot(*connection_key).unwrap(); // TODO: handle this properly
+                                                            // TODO: wait for shutdown from handler
+                                                            // what the heck did rustfmt do above
+            *connection_key = CF_CONNECTION_KEY::default();
+            std::process::exit(0);
+        }
+    }
+}
+
 pub(crate) fn main() -> Result<()> {
     let args = Args::parse(); // todo: check path is absolute
     let sync_root_path_h = args.sync_root_path.as_os_str().into();
@@ -162,7 +190,9 @@ pub(crate) fn main() -> Result<()> {
 
     register_sync_root(&sync_root_path_h).context("reg_sync_r")?;
 
-    unsafe { connect_callbacks(sync_root_path_u, CALLBACK_TABLE) }.unwrap();
+    let connection_key = unsafe { connect_callbacks(sync_root_path_u, CALLBACK_TABLE) }.unwrap();
+    *(CONNECTION_KEY.lock().unwrap()) = connection_key;
+    unsafe { SetConsoleCtrlHandler(Some(unregister_on_ctrl_c), true) }.ok()?;
 
     let identity = NameIdentity::from("asdf".to_owned());
     let placeholders = &mut [PlaceholderCreateInfo {
