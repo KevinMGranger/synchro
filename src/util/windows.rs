@@ -9,6 +9,7 @@ pub(crate) use strings::*;
 
 use anyhow::{Context, Result};
 use windows::Win32::{
+    Foundation::CloseHandle,
     Security::{GetTokenInformation, TokenUser, TOKEN_QUERY, TOKEN_USER},
     System::Threading::{GetCurrentProcess, OpenProcessToken},
 };
@@ -24,4 +25,30 @@ pub(crate) fn get_token_user() -> Result<DynamicBufPtr<TOKEN_USER>> {
         GetTokenInformation(process_token, TokenUser, ptr, size, ret_len)
     })
     .context("GetTokenInformation")
+}
+
+pub(crate) struct FileHandle(HANDLE);
+
+impl From<HANDLE> for FileHandle {
+    fn from(value: HANDLE) -> Self {
+        Self(value)
+    }
+}
+
+impl AsRef<HANDLE> for FileHandle {
+    fn as_ref(&self) -> &HANDLE {
+        &self.0
+    }
+}
+
+impl Drop for FileHandle {
+    fn drop(&mut self) {
+        let _ = unsafe { CloseHandle(self.0) };
+    }
+}
+
+impl From<&FileHandle> for HANDLE {
+    fn from(value: &FileHandle) -> Self {
+        value.0
+    }
 }

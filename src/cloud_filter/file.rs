@@ -17,3 +17,5 @@ impl Drop for CfFileHandle {
         unsafe { CfCloseHandle(self.0) }
     }
 }
+
+// TODO: similar for CfGetTransferKey

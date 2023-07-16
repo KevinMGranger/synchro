@@ -1,13 +1,18 @@
-use crate::util::windows::prelude::*;
+use crate::util::windows::{prelude::*, FileHandle};
 
 use anyhow::{Context, Result};
 use std::ffi::c_void;
 use std::fmt;
+use windows::Win32::Storage::FileSystem::{
+    CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_GENERIC_READ, FILE_SHARE_NONE, OPEN_EXISTING,
+    WRITE_DAC,
+};
 
 use windows::core::{HRESULT, PCWSTR};
 use windows::Win32::Storage::CloudFilters::{
-    CfCreatePlaceholders, CF_CREATE_FLAGS, CF_FS_METADATA, CF_PLACEHOLDER_CREATE_FLAGS,
-    CF_PLACEHOLDER_CREATE_INFO, CF_PLACEHOLDER_MAX_FILE_IDENTITY_LENGTH,
+    CfCreatePlaceholders, CfSetInSyncState, CF_CREATE_FLAGS, CF_FS_METADATA,
+    CF_IN_SYNC_STATE_IN_SYNC, CF_IN_SYNC_STATE_NOT_IN_SYNC, CF_PLACEHOLDER_CREATE_FLAGS,
+    CF_PLACEHOLDER_CREATE_INFO, CF_PLACEHOLDER_MAX_FILE_IDENTITY_LENGTH, CF_SET_IN_SYNC_FLAG_NONE,
 };
 
 /// Information to create a placeholder.
@@ -106,5 +111,37 @@ where
         Ok(_) => Ok(entries_processed),
         Err(e) if e.code() == ALREADY_EXISTS => Ok(entries_processed),
         Err(e) => Err(e).context(CreateErrorContext(entries_processed)),
+    }
+}
+
+// todo: usn
+// todo: allow passing a handle?
+pub(crate) fn set_sync_status(path: &U16CStr, in_sync: bool) -> Result<()> {
+    let handle = unsafe {
+        CreateFileW(
+            PCWSTR(path.as_ptr()),
+            FILE_GENERIC_READ | WRITE_DAC,
+            FILE_SHARE_NONE,
+            None,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            HANDLE::default(),
+        )
+        .context("createfile")?
+    };
+    let handle = FileHandle::from(handle);
+
+    unsafe {
+        CfSetInSyncState(
+            &handle,
+            if in_sync {
+                CF_IN_SYNC_STATE_IN_SYNC
+            } else {
+                CF_IN_SYNC_STATE_NOT_IN_SYNC
+            },
+            CF_SET_IN_SYNC_FLAG_NONE,
+            None,
+        )
+        .context("set in sync")
     }
 }

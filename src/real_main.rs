@@ -5,7 +5,9 @@ use std::sync::Mutex;
 use std::{thread::sleep, time::Duration};
 
 use crate::cloud_filter::operations::{Operation, TransferDataParams};
-use crate::cloud_filter::placeholders::{create_placeholders, PlaceholderCreateInfo};
+use crate::cloud_filter::placeholders::{
+    create_placeholders, set_sync_status, PlaceholderCreateInfo,
+};
 use crate::cloud_filter::{callbacks::*, sync_root::*};
 use crate::util::windows::prelude::*;
 
@@ -215,6 +217,11 @@ pub(crate) fn main() -> Result<()> {
 
     create_placeholders(sync_root_path_u, placeholders, CF_CREATE_FLAG_NONE)
         .context("placeholders")?;
+
+    // mark as sync't
+    let foo_path = args.sync_root_path.join("foo");
+    let foo_path_u = U16CString::from_os_str(foo_path)?;
+    set_sync_status(&foo_path_u, true)?;
 
     loop {
         sleep(Duration::MAX);
