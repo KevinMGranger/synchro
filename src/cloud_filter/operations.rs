@@ -11,7 +11,7 @@ use windows::Win32::{
 
 use super::callbacks::CallbackInfo;
 use crate::util::{proper_cast_slice, windows::prelude::*};
-use std::mem::size_of;
+use std::mem::{align_of, size_of};
 
 // TODO: SYNC_STATUS
 // TODO: take `self` so it can just be implemented on various types of ref?
@@ -41,6 +41,23 @@ pub(crate) fn op_info_from_callback<_T, _U>(
     }
 }
 
+/// Compute the size of the [CF_OPERATION_PARAMETERS] struct
+/// containing the given union member,
+/// taking into account the padding necessary.
+const fn cf_op_params_size_of<ParamType>() -> u32 {
+    let offset = 4;
+    let alignment = align_of::<ParamType>();
+
+    let misalignment = offset % alignment;
+    let padding_needed = if misalignment != 0 {
+        alignment - misalignment
+    } else {
+        0
+    };
+
+    (offset + padding_needed + size_of::<ParamType>()) as u32
+}
+
 /// The parameters for a [CF_OPERATION_TYPE_TRANSFER_DATA] operation.
 pub(crate) struct TransferDataParams<'a> {
     pub(crate) status: NTSTATUS,
@@ -52,8 +69,10 @@ pub(crate) struct TransferDataParams<'a> {
 // but a different representation, then oh crap
 
 impl<'a> TransferDataParams<'a> {
+    const SIZE: u32 = cf_op_params_size_of::<CF_OPERATION_PARAMETERS_0_6>();
     /// Convert into the FFI version of this struct.
     unsafe fn to_inner(&self) -> CF_OPERATION_PARAMETERS {
+        #[allow(non_snake_case)]
         let TransferData = dbg!(CF_OPERATION_PARAMETERS_0_6 {
             Flags: CF_OPERATION_TRANSFER_DATA_FLAG_NONE,
             CompletionStatus: self.status,
@@ -61,10 +80,8 @@ impl<'a> TransferDataParams<'a> {
             Offset: self.offset,
             Length: self.buf.len() as i64,
         });
-        dbg!(size_of::<u32>() + size_of::<CF_OPERATION_PARAMETERS_0_6>());
-        let ParamSize = dbg!(size_of::<CF_OPERATION_PARAMETERS>() as u32); // shouldn't be right, but...
         CF_OPERATION_PARAMETERS {
-            ParamSize,
+            ParamSize: Self::SIZE,
             Anonymous: CF_OPERATION_PARAMETERS_0 { TransferData },
         }
     }
