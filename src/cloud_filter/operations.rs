@@ -2,8 +2,10 @@ use windows::Win32::{
     Foundation::NTSTATUS,
     Storage::CloudFilters::{
         CfExecute, CF_OPERATION_INFO, CF_OPERATION_PARAMETERS, CF_OPERATION_PARAMETERS_0,
-        CF_OPERATION_PARAMETERS_0_6, CF_OPERATION_TRANSFER_DATA_FLAG_NONE, CF_OPERATION_TYPE,
-        CF_OPERATION_TYPE_TRANSFER_DATA,
+        CF_OPERATION_PARAMETERS_0_0, CF_OPERATION_PARAMETERS_0_1, CF_OPERATION_PARAMETERS_0_2,
+        CF_OPERATION_PARAMETERS_0_3, CF_OPERATION_PARAMETERS_0_4, CF_OPERATION_PARAMETERS_0_5,
+        CF_OPERATION_PARAMETERS_0_6, CF_OPERATION_PARAMETERS_0_7,
+        CF_OPERATION_TRANSFER_DATA_FLAG_NONE, CF_OPERATION_TYPE, CF_OPERATION_TYPE_TRANSFER_DATA,
     },
 };
 
@@ -69,11 +71,11 @@ pub(crate) struct TransferDataParams<'a> {
 // but a different representation, then oh crap
 
 impl<'a> TransferDataParams<'a> {
-    const SIZE: u32 = cf_op_params_size_of::<CF_OPERATION_PARAMETERS_0_6>();
+    const CF_OP_PARAMS_STRUCT_SIZE: u32 = cf_op_params_size_of::<TransferDataParamsUnionStruct>();
     /// Convert into the FFI version of this struct.
     unsafe fn to_inner(&self) -> CF_OPERATION_PARAMETERS {
         #[allow(non_snake_case)]
-        let TransferData = dbg!(CF_OPERATION_PARAMETERS_0_6 {
+        let TransferData = dbg!(TransferDataParamsUnionStruct {
             Flags: CF_OPERATION_TRANSFER_DATA_FLAG_NONE,
             CompletionStatus: self.status,
             Buffer: self.buf.as_ptr(),
@@ -81,7 +83,7 @@ impl<'a> TransferDataParams<'a> {
             Length: self.buf.len() as i64,
         });
         CF_OPERATION_PARAMETERS {
-            ParamSize: Self::SIZE,
+            ParamSize: Self::CF_OP_PARAMS_STRUCT_SIZE,
             Anonymous: CF_OPERATION_PARAMETERS_0 { TransferData },
         }
     }
@@ -91,22 +93,17 @@ impl<'p> Operation for TransferDataParams<'p> {
     fn execute<_T, _U>(&mut self, info: &CallbackInfo<'_, _T, _U>) -> WinResult<()> {
         let op_info = dbg!(op_info_from_callback(info, CF_OPERATION_TYPE_TRANSFER_DATA));
         let mut params = unsafe { self.to_inner() };
-        // params.Anonymous.TransferData.Buffer = "Hello, world!\n".as_ptr() as *const c_void;
-
-        // test buffer reinterpretation, in case that's the issue.
-        let data: &[u8] = proper_cast_slice(self.buf);
-        let _ = dbg!(std::str::from_utf8(data));
 
         unsafe { CfExecute(&op_info, &mut params) }
     }
 }
 
 // TODO: these are a little too low level, let's make adapters
-// pub(crate) type TransferDataParams = CF_OPERATION_PARAMETERS_0_6;
-// pub(crate) type RetrieveDataParams = CF_OPERATION_PARAMETERS_0_5;
-// pub(crate) type AckDataParams = CF_OPERATION_PARAMETERS_0_0;
-// pub(crate) type RestartHydrationParams = CF_OPERATION_PARAMETERS_0_4;
-// pub(crate) type TransferPlaceholdersParams = CF_OPERATION_PARAMETERS_0_7;
-// pub(crate) type AckDehydrateParams = CF_OPERATION_PARAMETERS_0_1;
-// pub(crate) type AckRenameParams = CF_OPERATION_PARAMETERS_0_3;
-// pub(crate) type AckDeleteParams = CF_OPERATION_PARAMETERS_0_2;
+pub(crate) type TransferDataParamsUnionStruct = CF_OPERATION_PARAMETERS_0_6;
+pub(crate) type RetrieveDataParamsUnionStruct = CF_OPERATION_PARAMETERS_0_5;
+pub(crate) type AckDataParamsUnionStruct = CF_OPERATION_PARAMETERS_0_0;
+pub(crate) type RestartHydrationParamsUnionStruct = CF_OPERATION_PARAMETERS_0_4;
+pub(crate) type TransferPlaceholdersParamsUnionStruct = CF_OPERATION_PARAMETERS_0_7;
+pub(crate) type AckDehydrateParamsUnionStruct = CF_OPERATION_PARAMETERS_0_1;
+pub(crate) type AckRenameParamsUnionStruct = CF_OPERATION_PARAMETERS_0_3;
+pub(crate) type AckDeleteParamsUnionStruct = CF_OPERATION_PARAMETERS_0_2;
