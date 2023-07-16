@@ -85,7 +85,7 @@ fn the_cooler_fetch_callback(
         ..(params.RequiredFileOffset + params.RequiredLength) as usize;
     // TODO: try transferring more than requested? especially with a large amount (on a slow disk (can we emulate that))
 
-    let mut transfer = match FILE_CONTENTS.get(range) {
+    let mut transfer = match dbg!(FILE_CONTENTS.get(range)) {
         Some(slice) => TransferDataParams {
             status: STATUS_SUCCESS,
             buf: proper_cast_slice(slice.as_ref()),
@@ -98,15 +98,15 @@ fn the_cooler_fetch_callback(
         },
     };
 
-    let err = dbg!(transfer.execute(&info).unwrap_err());
+    let _ = dbg!(transfer.execute(&info));
 }
 
 pub(crate) extern "system" fn callback_test_fetch(
     callbackinfo: *const CF_CALLBACK_INFO,
     callbackparams: *const CF_CALLBACK_PARAMETERS,
 ) {
-    let callback_info = unsafe { &*callbackinfo };
-    let params = unsafe { (*callbackparams).Anonymous.FetchData };
+    let callback_info = dbg!(unsafe { &*callbackinfo });
+    let params = dbg!(unsafe { (*callbackparams).Anonymous.FetchData });
 
     let callback_info = CallbackInfo::from(callback_info);
     let callback_info = callback_info.map_identities(

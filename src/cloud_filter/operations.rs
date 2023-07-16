@@ -35,9 +35,9 @@ pub(crate) fn op_info_from_callback<_T, _U>(
         Type: op_type,
         ConnectionKey: info.connection_key,
         TransferKey: info.transfer_key,
-        CorrelationVector: info.correlation_vector,
+        CorrelationVector: std::ptr::null(),
         SyncStatus: std::ptr::null(), // TODO
-        RequestKey: info.request_key,
+        RequestKey: 0,                // info.request_key, // they don't set this in the example???
     }
 }
 
@@ -54,17 +54,18 @@ pub(crate) struct TransferDataParams<'a> {
 impl<'a> TransferDataParams<'a> {
     /// Convert into the FFI version of this struct.
     unsafe fn to_inner(&self) -> CF_OPERATION_PARAMETERS {
+        let TransferData = dbg!(CF_OPERATION_PARAMETERS_0_6 {
+            Flags: CF_OPERATION_TRANSFER_DATA_FLAG_NONE,
+            CompletionStatus: self.status,
+            Buffer: self.buf.as_ptr(),
+            Offset: self.offset,
+            Length: self.buf.len() as i64,
+        });
+        dbg!(size_of::<u32>() + size_of::<CF_OPERATION_PARAMETERS_0_6>());
+        let ParamSize = dbg!(size_of::<CF_OPERATION_PARAMETERS>() as u32); // shouldn't be right, but...
         CF_OPERATION_PARAMETERS {
-            ParamSize: (size_of::<u32>() + size_of::<CF_OPERATION_PARAMETERS_0_6>()) as u32,
-            Anonymous: CF_OPERATION_PARAMETERS_0 {
-                TransferData: CF_OPERATION_PARAMETERS_0_6 {
-                    Flags: CF_OPERATION_TRANSFER_DATA_FLAG_NONE,
-                    CompletionStatus: self.status,
-                    Buffer: self.buf.as_ptr(),
-                    Offset: self.offset,
-                    Length: self.buf.len() as i64,
-                },
-            },
+            ParamSize,
+            Anonymous: CF_OPERATION_PARAMETERS_0 { TransferData },
         }
     }
 }

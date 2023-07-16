@@ -35,12 +35,13 @@ pub(crate) fn get_sync_root_id() -> Result<OsString> {
         LocalPWSTR::new(|ptr| unsafe { ConvertSidToStringSidW(sid, ptr) })?.into();
 
     // todo: reserve
-    // todo: link to specification for this format
     let mut id = OsString::from(STORAGE_PROVIDER_ID);
     id.push("!");
     id.push(sid_str);
     id.push("!");
     id.push(STORAGE_PROVIDER_ACCOUNT);
+
+    dbg!(&id);
 
     Ok(id)
 }
